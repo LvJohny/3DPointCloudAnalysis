@@ -1,4 +1,4 @@
-# 文件功能：实现 GMM 算法
+# 文件功能：实现 Spectral Cluster 算法
 
 import numpy as np
 from numpy import *
