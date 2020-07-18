@@ -1,4 +1,4 @@
-# 文件功能：实现 GMM 算法
+# 文件功能：实现 Spectral Cluster 算法
 
 import numpy as np
 from numpy import *
@@ -39,7 +39,7 @@ class Spectral(object):
                 if index != result_set_knn.dist_index_list[i].index :
                     W[index, result_set_knn.dist_index_list[i].index] = 1 / result_set_knn.dist_index_list[i].distance
 
-            # #full connect
+            # # full connect
             # diff = np.linalg.norm(data - data[index, :], axis=1)
             # for i in range(diff.shape[0]):
             #     if index != i :
