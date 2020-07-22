@@ -29,86 +29,55 @@ class Spectral(object):
         neighbor = 50
         for index in range(data.shape[0]):
             # RNN
-            # result_set_knn = RadiusNNResultSet(radius=1.5)
-            # kdtree.kdtree_radius_search(root, data, result_set_knn, data[index])
-
+            # result_set = RadiusNNResultSet(radius=1)
+            # kdtree.kdtree_radius_search(root, data, result_set, data[index])
             #KNN
-            result_set_knn = KNNResultSet(capacity=neighbor)  # neighbor
-            kdtree.kdtree_knn_search(root, data, result_set_knn, data[index])
-            for i in range(result_set_knn.size()):
-                if index != result_set_knn.dist_index_list[i].index :
-                    W[index, result_set_knn.dist_index_list[i].index] = 1 / result_set_knn.dist_index_list[i].distance
+            result_set = KNNResultSet(capacity=neighbor)  # neighbor
+            kdtree.kdtree_knn_search(root, data, result_set, data[index])
 
-            # # full connect
-            # diff = np.linalg.norm(data - data[index, :], axis=1)
-            # for i in range(diff.shape[0]):
-            #     if index != i :
-            #         #Gasssian Kle
-            #         W[index, i] = 1/diff[i]
+            for i in range(result_set.size()):
+                if index != result_set.dist_index_list[i].index :
+                    W[index, result_set.dist_index_list[i].index] = 1 / result_set.dist_index_list[i].distance
 
         d = W.sum(axis=1)
         d_inv = d ** (-0.5)
         D = np.diag(d)
         # unnormalized
         L = D - W
-        # # normalized
-        #L_rw = np.linalg.inv(D) @ L
+        # normalized
         L = np.diag(d_inv) @ L @ np.diag(d_inv)
 
-
-        #eigenvalues, eigenvectors =  np.linalg.eig(L)
         eigenvectors, eigenvalues, vh = np.linalg.svd(L, full_matrices=True)
         sort = eigenvalues.argsort()
         eigenvalue = eigenvalues[sort]
         eigenvector = eigenvectors[:, sort]
-
-        #V = np.flip( eigenvectors[:,(eigenvectors.shape[1]-self.n_clusters):(eigenvectors.shape[1])], axis=1)
-        #find cluster num
+        # determine cluster num
         num1 = np.linspace(0, eigenvalues.shape[0] - 2, eigenvalues.shape[0] - 1, dtype=int32)
         num2 = num1 + 1
         cha = eigenvalue[num2] - eigenvalue[num1]
         idx = 0
-
-        # for  i in range(10):
-        #     print(cha[i+1] / cha[i],',')
-
         while(True):
             if cha[idx+1] / cha[idx] < 3:
                 idx += 1
             else:
                 break
-        #cluster_num = np.argmax(cha)+1
         cluster_num = idx+2
         print('spectral clusters num:',cluster_num,'given:',self.n_clusters)
-        #self.n_clusters = cluster_num
-
-        # x = np.linspace(0, eigenvalues.shape[0] - 1, eigenvalues.shape[0], dtype=int32)
-        x = np.linspace(0, 9, 10, dtype=int32)
-        plt.plot(x, eigenvalue[0:10], 'g^', x,cha[0:10], 'bs')
-        plt.ylabel('size eigenvalue')
-        plt.show()
-
+        self.n_clusters = cluster_num
 
         V = eigenvector[:,0:self.n_clusters]
-        val = eigenvalues[0:self.n_clusters]
+        # 归一化
         for idx in range(V.shape[0]):
             V[idx,:] = V[idx,:] / np.linalg.norm(V[idx,:])
         Y_kmeans = K_Means(n_clusters=self.n_clusters)
-        print(V.shape)
         Y_kmeans.fit(V)
         self.result = Y_kmeans.predict(V)
-
-        print('end')
-
-
-
 
         # 屏蔽结束
 
     def predict(self, data):
         # 屏蔽开始
         result = self.result
-
         return result
         # 屏蔽结束
 

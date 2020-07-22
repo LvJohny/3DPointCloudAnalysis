@@ -13,6 +13,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import open3d as o3d
 
+from cluster.Spectral_Clustering import  Spectral
+
 # 功能：从kitti的.bin格式点云文件中读取点云
 # 输入：
 #     path: 文件路径
@@ -75,15 +77,7 @@ def ground_segmentation(data):
             PlaneRatios = eigenvectors[:,0]
 
         ite -= 1
-    # end ite
-    # inlier_cloud = o3d.geometry.PointCloud()
-    # outlier_cloud = o3d.geometry.PointCloud()
-    # inlier_cloud.points = o3d.utility.Vector3dVector(InliersData[:, 0:3])
-    # inlier_cloud.paint_uniform_color([0, 1, 0])
-    # Outliers = [i for i, x in enumerate(np.arange(data.shape[0])) if i not in InliersIdx]
-    # outlier_cloud.points = o3d.utility.Vector3dVector(data[Outliers, 0:3])
-    # outlier_cloud.paint_uniform_color([1, 0, 0])
-    # o3d.visualization.draw_geometries([inlier_cloud, outlier_cloud])
+    # end iteration
 
     inlier_points = InliersData[:, 0:3]
     Outliers = [i for i, x in enumerate(np.arange(data.shape[0])) if i not in InliersIdx]
@@ -101,9 +95,9 @@ def ground_segmentation(data):
 def clustering(data):
     # 作业2
     # 屏蔽开始
-    clusters_index=[]
-
-
+    spectral = Spectral(n_clusters=3)
+    spectral.fit(data)
+    clusters_index = spectral.predict(data)
 
     # 屏蔽结束
 
