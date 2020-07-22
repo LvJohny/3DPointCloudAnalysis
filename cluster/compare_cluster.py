@@ -131,7 +131,7 @@ for i_dataset, (dataset, algo_params) in enumerate(datasets):
     
     clustering_algorithms = (
         ('My_KMeans', my_kmeans),
-        ('My_GMM', my_gmm),
+        #('My_GMM', my_gmm),
         ('My_Spectral', my_spectral),
         ('MiniBatchKMeans', two_means),
         ('AffinityPropagation', affinity_propagation),
