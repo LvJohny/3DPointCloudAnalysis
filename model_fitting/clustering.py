@@ -12,8 +12,9 @@ from itertools import cycle, islice
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import open3d as o3d
-
+import pylab as pl
 from cluster.Spectral_Clustering import  Spectral
+from model_fitting.DBSACN import DBSACN
 
 # 功能：从kitti的.bin格式点云文件中读取点云
 # 输入：
@@ -62,13 +63,13 @@ def ground_segmentation(data):
         pi = (PlaneRatios[0]**2+PlaneRatios[1]**2+PlaneRatios[2]**2)**0.5
         di = abs((PlaneRatios * data[:]).sum(axis=1)) / pi
         # sort inliers
-        Inliers = (di < 0.1).tolist()
+        Inliers = (di < 0.2).tolist()
         InliersIdx = [i for i, x in enumerate(Inliers) if x]
         InliersData = data[InliersIdx]
         # refit plane 最小二乘解
-        if InliersData.shape[0]/data.shape[0] > 0.3:
+        if InliersData.shape[0]/data.shape[0] > 0.2:
             if Inlier_Point_is_few:
-                print('There are many inliers')
+                print('There are many inliers so calculate Least square solution ')
                 Inlier_Point_is_few = False
             eigenvectors, eigenvalues, vh = np.linalg.svd(InliersData.T @ InliersData, full_matrices=True)
             sort = eigenvalues.argsort()
@@ -84,7 +85,9 @@ def ground_segmentation(data):
     outlier_points = data[Outliers, 0:3]
     # 屏蔽结束
 
-    print('ground point/total:', inlier_points.shape[0]/data.shape[0])
+    print('ground point/total:', inlier_points.shape[0]/data.shape[0],
+          '\ngound points:',inlier_points.shape[0],
+          '\nsegmented_points:',outlier_points.shape[0])
     return inlier_points,outlier_points
 
 # 功能：从点云中提取聚类
@@ -95,9 +98,9 @@ def ground_segmentation(data):
 def clustering(data):
     # 作业2
     # 屏蔽开始
-    spectral = Spectral(n_clusters=3)
-    spectral.fit(data)
-    clusters_index = spectral.predict(data)
+    dbsacn = DBSACN()
+    dbsacn.fit(data)
+    clusters_index = dbsacn.predict(data)
 
     # 屏蔽结束
 
@@ -114,8 +117,13 @@ def plot_clusters(data, cluster_index):
                                              '#999999', '#e41a1c', '#dede00']),
                                       int(max(cluster_index) + 1))))
     colors = np.append(colors, ["#000000"])
+    colors = np.insert(colors,0, ["#000000"])
+    colors = np.insert(colors, 0, ["#000000"])
     ax.scatter(data[:, 0], data[:, 1], data[:, 2], s=2, color=colors[cluster_index])
     plt.show()
+
+
+
 
 def main():
     root_dir = '/home/ljn/SLAM/dateset/KITTI 3D object detect' # 数据集路径

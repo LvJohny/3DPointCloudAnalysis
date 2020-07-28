@@ -5,12 +5,12 @@ from numpy import *
 import pylab
 import random, math
 from itertools import cycle, islice
-import kdtree as kdtree
-from result_set import KNNResultSet, RadiusNNResultSet
+import nearset_nerghbor.kdtree as kdtree
+from nearset_nerghbor.result_set import KNNResultSet, RadiusNNResultSet
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 from scipy.stats import multivariate_normal
-from KMeans import K_Means
+from cluster.KMeans import K_Means
 plt.style.use('seaborn')
 
 
@@ -26,28 +26,33 @@ class Spectral(object):
 
         W = np.zeros((data.shape[0], data.shape[0]), dtype=np.float64)
         root = kdtree.kdtree_construction(data, leaf_size=10)
+        leaf_size = ((data.max(axis = 0) - data.min(axis=0))/((data.shape[0])**(0.3))).max() * 2
         neighbor = 50
-        for index in range(data.shape[0]):
+        index = 0
+        while (index < data.shape[0]) :
             # RNN
-            # result_set = RadiusNNResultSet(radius=1)
+            # result_set = RadiusNNResultSet(radius=leaf_size)
             # kdtree.kdtree_radius_search(root, data, result_set, data[index])
             #KNN
             result_set = KNNResultSet(capacity=neighbor)  # neighbor
             kdtree.kdtree_knn_search(root, data, result_set, data[index])
-
-            for i in range(result_set.size()):
+            i = 0
+            while i < result_set.size() :
                 if index != result_set.dist_index_list[i].index :
                     W[index, result_set.dist_index_list[i].index] = 1 / result_set.dist_index_list[i].distance
-
+                i += 1
+            index += 1
         d = W.sum(axis=1)
+        print('min: ', d.min())
         d_inv = d ** (-0.5)
+        print('min: ',d_inv.min())
         D = np.diag(d)
         # unnormalized
         L = D - W
         # normalized
         L = np.diag(d_inv) @ L @ np.diag(d_inv)
 
-        eigenvectors, eigenvalues, vh = np.linalg.svd(L, full_matrices=True)
+        eigenvectors, eigenvalues, vh = np.linalg.svd(L, hermitian = True)
         sort = eigenvalues.argsort()
         eigenvalue = eigenvalues[sort]
         eigenvector = eigenvectors[:, sort]
@@ -61,14 +66,26 @@ class Spectral(object):
                 idx += 1
             else:
                 break
-        cluster_num = idx+2
-        print('spectral clusters num:',cluster_num,'given:',self.n_clusters)
-        self.n_clusters = cluster_num
+        cluster_num1 = idx+2
+        idx = 0
+        while(True):
+            if cha[idx] < cha[idx+1]:
+                idx += 1
+            else:
+                break
+        cluster_num2 = idx + 1
+        if cluster_num2 > cluster_num1:
+            cluster_num = cluster_num2
+        else:
+            cluster_num = cluster_num1
+
+        print('total points:',data.shape[0], 'spectral clusters num:', cluster_num, 'given:', self.n_clusters)
+        #self.n_clusters = cluster_num
 
         V = eigenvector[:,0:self.n_clusters]
         # 归一化
-        for idx in range(V.shape[0]):
-            V[idx,:] = V[idx,:] / np.linalg.norm(V[idx,:])
+        idx = np.arange(V.shape[0])
+        V[idx, :] = V[idx, :] / np.linalg.norm(V[idx, :])
         Y_kmeans = K_Means(n_clusters=self.n_clusters)
         Y_kmeans.fit(V)
         self.result = Y_kmeans.predict(V)
